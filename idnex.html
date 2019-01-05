@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://unpkg.com/jquery@1.9.1/jquery.min.js"></script>
+  <title>sinanews</title>
+  <style>
+    html,body,ul,li,p,div{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    ul,li{
+      list-style: none;
+    }
+    .clearfix:after{
+      content: '';
+      display: block;
+      clear: both;
+    }
+    .waterfall-ct{
+      width: 900px;
+      margin: 0 auto;
+     
+    }
+    #pict-ct{
+      position: relative;
+    }
+    #pict-ct .item{
+      position: absolute;
+      padding: 0 0 10px 0;
+      width: 280px;
+      margin: 10px;
+      border: 1px solid #dfdfdf;
+      background-color: #fff;
+    }
+    #pict-ct .item img{
+      width: 260px;
+      margin: 10px;
+    }
+    #pict-ct .item .header{
+      height: 25px;
+      margin: 0 12px;
+      border-bottom: 1px solid #dbdbdb;
+    }
+    #pict-ct .description{
+      font-size: 12px;
+      line-height: 1.8;
+      margin: 10px 15px 0;
+      color: #777371;
+    }
+    #load{
+      height: 20px;
+    }
+
+    .hide{
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="waterfall-ct">
+    <ul id="pict-ct" class="clearfix">
+      <!-- <li class="item">
+        <a href="#" class="link">
+          <img src="https://www.google.com.hk/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="">
+        </a>
+        <h4 class="header">很长很长的标题</h4>
+        <p class="description">当地时间2016年3月1日，在东部与亲俄武装作战中受伤的乌克兰士兵接受海豚治疗。</p>
+      </li> -->
+      <li class="item hide"></li>
+    </ul>
+    <div id="load">我是有底线的</div>
+  </div>
+<script>
+var currentPage = 1;
+var perPagCount = 10;
+var itemArr = [];
+var nodeWidth = $('.item').outerWidth(true);
+var colLength = Math.floor($('#pict-ct').width() / nodeWidth);
+for(var i=0; i< colLength; i++){
+  itemArr[i] = 0;
+};
+
+start();
+
+$(window).scroll(function(){
+  if(isShow($('#load'))){
+    start();
+  }
+});
+
+function start(){
+  getData(function(dataList){
+    $(dataList).each(function(idx,val){
+      var $node = getNode(val);
+      $node.find('img').load(function(){
+        $('#pict-ct').append($node);
+        waterFallFun($node);
+      });
+    });
+  });
+}
+
+function getData(callback){
+  $.ajax({
+    url: 'http://platform.sina.com.cn/slide/album_tech',
+    dataType: 'jsonp',
+    jsonp: "jsoncallback",
+    data:{
+      app_key: 1271687855,
+      num: perPagCount,
+      page: currentPage
+    }
+  }).done(function(ret){
+    if(ret && ret.status && ret.status.code === '0'){
+      callback(ret.data);
+      currentPage++;
+    }
+    else{
+      console.log('error...')
+    }
+  });
+}
+
+function getNode(item){
+  console.log(item);
+  var tpl =
+   `<li class="item">
+        <a href="#" class="link">
+          <img src="https://www.google.com.hk/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="">
+        </a>
+        <h4 class="header">很长很长的标题</h4>
+        <p class="description">当地时间2016年3月1日，在东部与亲俄武装作战中受伤的乌克兰士兵接受海豚治疗。</p>
+      </li>`;
+  var $node = $(tpl);
+  $node.find('a').attr('href', item.url);
+  $node.find('a img').attr('src',item.img_url);
+  $node.find('.header').text(item.short_name);
+  $node.find('.description').text(item.name);
+  return $node;
+  
+}
+
+function waterFallFun($node){
+  var minIndex = 0;
+  var minValue = itemArr[0];
+  for(var i=0; i<colLength; i++){
+    if(itemArr[i] < minValue){
+      minIndex = i;
+      minValue = itemArr[i];
+    }
+  }
+  $node.css({
+    left: minIndex * nodeWidth,
+    top: minValue
+  });
+
+  itemArr[minIndex] += $node.outerHeight(true);
+  $('#pict-ct').height(Math.max.apply(null,itemArr));
+}
+
+function isShow($node){
+  var nodeTop = $node.offset().top,
+      scrollTop = $(window).scrollTop(),
+      windowHeight = $(window).height();
+  if(nodeTop <= screenTop + windowHeight + 500){
+    return true;
+  }else{
+    return false;
+  }
+}
+</script>  
+</body>
+</html>
